@@ -1,0 +1,131 @@
+<!DOCTYPE HTML>
+<html>
+<body>
+    <script type="text/javascript" src="cordova.js"></script>
+    <script type="text/javascript">
+        function scan() {
+            // 呼叫Barcode掃瞄器套件
+            cordova.plugins.barcodeScanner.scan(function (result) {
+                // 成功則回傳掃描內容
+                alert(JSON.stringify(result));
+            }, function (error) {
+                // 失敗則掃描錯誤代碼
+                alert(JSON.stringify(error));
+            });
+        }
+
+        document.addEventListener("deviceready", onDeviceReady, false);
+        // Cordova加載完成後會觸發
+        function onDeviceReady() { }
+
+        function getCurrentPosition() {
+            // 定位資訊取得成功會呼叫這個
+            var onSuccess = function (position) {
+                alert('緯度: ' + position.coords.latitude + '\n' +
+                    '經度: ' + position.coords.longitude + '\n' +
+                    '海拔: ' + position.coords.altitude + '\n' +
+                    '水平精度: ' + position.coords.accuracy + '\n' +
+                    '垂直精度: ' + position.coords.altitudeAccuracy + '\n' +
+                    '方向: ' + position.coords.heading + '\n' +
+                    '速度: ' + position.coords.speed + '\n' +
+                    '時間戳: ' + position.timestamp + '\n');
+            };
+
+            // 定位資訊取得失敗會呼叫這個
+            function onError(error) {
+                alert('code: ' + error.code + '\n' +
+                    'message: ' + error.message + '\n');
+            }
+
+            // 開始讀取定位資訊
+            navigator.geolocation.getCurrentPosition(onSuccess, onError);
+        }
+
+        // 由左至右的參數分別是資料庫名稱, 版本號, 描述文本, 資料庫大小
+        var db = openDatabase('mydb', '1.0', 'Test DB', 2 * 1024 * 1024);
+        var msg;
+
+        function createTable() {
+            // 這是輸入SQL指令的方法
+            db.transaction(function (tx) {
+                tx.executeSql('CREATE TABLE IF NOT EXISTS example_table1 (id unique, name)');
+                tx.executeSql('CREATE TABLE IF NOT EXISTS example_table2 (id unique, name)');
+            });
+            showTable();
+        }
+
+        function dropTable() {
+            db.transaction(function (tx) {
+                tx.executeSql('DROP TABLE IF EXISTS example_table1');
+            });
+            showTable();
+        }
+
+        function insertData() {
+            db.transaction(function (tx) {
+                tx.executeSql('INSERT INTO example_table1 (id, name) VALUES (1, "tag1")');
+                tx.executeSql('INSERT INTO example_table1 (id, name) VALUES (2, "tag2")');
+                tx.executeSql('INSERT INTO example_table1 (id, name) VALUES (3, "tag3")');
+            });
+            showData();
+        }
+
+        function updateData() {
+            db.transaction(function (tx) {
+                tx.executeSql('UPDATE example_table1 SET name="tag4" WHERE id=1');
+            });
+            showData();
+        }
+
+        function deleteData() {
+            db.transaction(function (tx) {
+                tx.executeSql('DELETE FROM example_table1 WHERE id=2');
+            });
+            showData();
+        }
+
+        function showData() {
+            // 如果要使用SELECT指令，方法帶的參數會有些許不同
+            db.transaction(function (tx) {
+                tx.executeSql('SELECT * FROM example_table1', [],
+                    function (tx, results) {
+                        var len = results.rows.length, i;
+                        msg = "<p>Found Rows: " + len + "</p>";
+                        document.querySelector('#status').innerHTML = msg;
+
+                        for (i = 0; i < len; i++) {
+                            msg = "<p>" + results.rows.item(i).id + " : "
+                                + results.rows.item(i).name + "</p>";
+                            document.querySelector('#status').innerHTML += msg;
+                        }
+                    }, null);
+            });
+        }
+
+        function showTable() {
+            db.transaction(function (tx) {
+                tx.executeSql('SELECT * FROM sqlite_master WHERE TYPE="table"', [],
+                    function (tx, results) {
+                        var len = results.rows.length, i;
+                        msg = "<p>Found Rows: " + len + "</p>";
+                        document.querySelector('#status').innerHTML = msg;
+
+                        for (i = 0; i < len; i++) {
+                            msg = "<p>Table Name: " + results.rows.item(i).name + "</p>";
+                            document.querySelector('#status').innerHTML += msg;
+                        }
+                    }, null);
+            });
+        }
+    </script>
+
+    <button onclick="getCurrentPosition();">GET GEOLOCATION</button>
+    <button onclick="scan()">SCAN</button><br />
+    <button onclick="createTable();">CREATE</button>
+    <button onclick="dropTable();">DROP</button><br />
+    <button onclick="insertData();">INSERT</button><br />
+    <button onclick="updateData();">UPDATE</button><br />
+    <button onclick="deleteData();">DELETE</button>
+    <div id="status" name="status">Status Message</div>
+</body>
+</html>
